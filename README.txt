@@ -1,19 +1,8 @@
-Creating the docker container
-  1. Open terminal to the directory where the docker-compose.yml file is located
-    Mac/Linux:
-      ``` chmod +x BootUnix.sh ```
-      ``` ./BootUnix.sh ```
-    Windows:
-      ```  ./Boot.sh ```
-
-
-Running terminal shark
-  1. tshark -Y amqp 
-
+# Metadata Module
 
 ## Setting up the environment
 
-1. **Create a virtual environment** (in the main project directory):
+ **Create a virtual environment** (in the main project directory):
 
     ```bash
     python -m venv env
@@ -73,3 +62,9 @@ Ensure **Docker Desktop** is running if you are on Windows.
     ```bash
     python main_server.py
     ```
+
+## Additional Notes
+
+- Ensure Docker is running before starting the containers.
+- Use separate terminal windows to run `parse.py` and `main_server.py`.
+- Make sure you are in the correct directories when running the Python scripts.
