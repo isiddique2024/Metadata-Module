@@ -1,3 +1,5 @@
+#import packages put your Initials 
+#from statusFeed import statusFeed importing the status feed file so we cn use the functions in here.
 #-----------------------------------Isaam & Dylan--------------------------------------------#
 #create a catch all Receiver 
 #make it continously listen 
@@ -9,7 +11,7 @@
 
 #function createDir{
 #once files stores call the messageBuilder function with parameters 
-
+#stausFeed.MessageBuilder() 
 
 
 
