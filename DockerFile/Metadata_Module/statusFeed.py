@@ -4,22 +4,18 @@ import hashlib
 import datetime
 import json
 import random
-#-----------------------------------SEKAI--------------------------------------------#
-#this function will create messages for the DEMO, we will modify this to have other functions call it.
-# jobID:
-# contentID
-# Status: Sent to GraphDB
-# timestamp:
-# details:
-
+from publisher import publish_to_rabbitmq # to make messageSender functional
 
 class statusFeed:
-    #@staticmethod
+    @staticmethod
     def messageBuilder(content_ID):
-        contentID = content_ID #other functions will pass this parameter
         messageID = str(random.random())
-        #status = input
-        #timestamp current
+        contentID = content_ID # other functions will pass this parameter        
+        #status = from other modules       
+        cts = datetime.datetime.now() # current timestamp
+        format_cts = cts.strftime('%Y-%m-%d %H:%M:%S') # formatting
+        #details = from other modules
+
         #other inputs/variables as necessary 
 
         #build BSON Builder
@@ -27,36 +23,20 @@ class statusFeed:
             "JobID": messageID,  
             "contentID": contentID,
             "Status": 1,
-            "timestamp": 2,
+            "timestamp": format_cts,
             "details": 1
-        } # send back to messageSender (return)
+        }
         print(job)
-
-
-
+        # send back to messageSender
+        messageSender(job)
 
 #This sends to our rabbitMQ publisher .. Like their parse.py Choose a port and have our publisher listen on that port
-#def messageSender(bsonObj):
- #   port = '1234'
-    #send to port
-
-
-
-#if __name__ == '__main__':
-#    print("Enter a contetnID")
-    #asks for input 
+def messageSender(bsonObj):
+    #sending to port
+    port = '1234'
+    publish_to_rabbitmq(port, bsonObj)
     
-    #call function - pass input
-user_input = input("contenID")
-print("Hello, " + user_input + "!")
-
-result = statusFeed.messageBuilder(user_input)
-print(result)
-#-----------------------------------Isaam--------------------------------------------#
-
-#-----------------------------------Akeno--------------------------------------------#
-#your code here
-#-----------------------------------Dylan--------------------------------------------#
-#your code here
-#-----------------------------------BigDawg--------------------------------------------#
-#your code here
+# main function
+if __name__ == '__main__':
+    user_input = input("Enter contentID: ")
+    statusFeed.messageBuilder(user_input)
