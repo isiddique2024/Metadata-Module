@@ -8,7 +8,7 @@ from publisher import publish_to_rabbitmq # to make messageSender functional
 
 class statusFeed:
     @staticmethod
-    def messageBuilder(content_ID):
+    def messageBuilder(content_ID,statusMessage,details):
         messageID = str(random.random())
         contentID = content_ID # other functions will pass this parameter        
         #status = from other modules       
@@ -22,9 +22,9 @@ class statusFeed:
         job = { 
             "JobID": messageID,  
             "contentID": contentID,
-            "Status": 1,
+            "Status": statusMessage,
             "timestamp": format_cts,
-            "details": 1
+            "details": details
         }
         print(job)
         # send back to messageSender
@@ -33,10 +33,12 @@ class statusFeed:
 #This sends to our rabbitMQ publisher .. Like their parse.py Choose a port and have our publisher listen on that port
 def messageSender(bsonObj):
     #sending to port
-    port = '1234'
+    port = '12345'
     publish_to_rabbitmq(port, bsonObj)
     
 # main function
 if __name__ == '__main__':
     user_input = input("Enter contentID: ")
-    statusFeed.messageBuilder(user_input)
+    statusMessage = input("Enter status of job: ")
+    details = input("Additional Details: ")
+    statusFeed.messageBuilder(user_input,statusMessage,details)

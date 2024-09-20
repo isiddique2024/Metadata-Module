@@ -29,28 +29,10 @@ def handle_client(client):
 
     try:
         obj = bson.loads(bson_data)
-        parse_bson_obj(obj)
+        publish_to_rabbitmq('.Status.', obj)
     except Exception as e:
         print(f"Error decoding BSON: {e}")
    
-
-# Function to parse BSON object and publish data to RabbitMQ
-def parse_bson_obj(obj):
-    # Dictionary mapping data types to routing keys
-    data_types = {
-        'Documents': '.Document.',
-        'Images': '.Image.',
-        'Audio': '.Audio.',
-        'Video': '.Video.'
-    } # change to message body
-    
-    # Iterate through each data type and publish relevant items
-    for data_type, routing_key in data_types.items():
-        if obj[data_type]:
-            for item in obj[data_type]:
-                publish_to_rabbitmq(routing_key, item)
-        else:
-            print(f"No {data_type.lower()} to send")
 
 # Function to publish messages to RabbitMQ
 def publish_to_rabbitmq(routing_key, message):
@@ -64,43 +46,24 @@ def publish_to_rabbitmq(routing_key, message):
 
         #prepping status message
         status_message = message.copy()
-        if 'Payload' in status_message: # error otherwise
-            del status_message['Payload'] #remove payload from status message
-        status_message['Status'] = 'Preprocessed Successfully' 
-        status_message['Message'] = 'Message has been preprocessed and sent to the respective queues' 
+ 
 
         
         status_message=bson.dumps(status_message)
 
         # Serialize the message to BSON
         message = bson.dumps(message)
-        # change dictionary
-        '''
-            Sample message  to be sent to the respective queues
-            {
-                "ID": "ObjectID",  
-                "DocumentId": "ObjectID",
-                "DocumentType": "String",
-                "FileName": "String",
-                "Payload": "String"
-            }
-        '''
-        # Publish the message to the specified routing key
-        channel.basic_publish(
-            exchange="Topic",
-            routing_key=routing_key,
-            body=message
-        )
+
         '''
         This will be sent to the dashboard
-            {
-                "ID": "ObjectID",  
-                "DocumentId": "ObjectID",
-                "DocumentType": "String",
-                "FileName": "String",
-                "Status": "Preprocessed Successfully",
-                "Message": "String"
-            }
+         {
+         
+         'JobID': '0.3864155992230227', 
+         'contentID': '123456', 
+         'Status': 'user inout for now', 
+         'timestamp': '2024-09-19 16:57:05', 
+         'details': 1,
+        }
         '''
         #publish status message to dashboard
         channel.basic_publish(
