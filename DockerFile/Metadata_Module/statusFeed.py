@@ -37,8 +37,8 @@ def messageSender(bsonObj):
     publish_to_rabbitmq(port, bsonObj)
     
 # main function
-if __name__ == '__main__':
-    user_input = input("Enter contentID: ")
-    statusMessage = input("Enter status of job: ")
-    details = input("Additional Details: ")
-    statusFeed.messageBuilder(user_input,statusMessage,details)
+# if __name__ == '__main__':
+#     user_input = input("Enter contentID: ")
+#     statusMessage = input("Enter status of job: ")
+#     details = input("Additional Details: ")
+#     statusFeed.messageBuilder(user_input,statusMessage,details)
