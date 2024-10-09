@@ -1,0 +1,15 @@
+GE414 B-EDT
+engine I-EDT
+F18 B-BDT
+aircraft I-BDT
+TCarbonX B-CMT
+compressor I-CMT
+blades I-CMT
+MG78 I-CMT
+GL69 I-CMT
+afterburner I-CMN
+
+Eaton-XP B-CMN
+hydraulic I-CMN
+systems I-CMT
+operation I-CMT
