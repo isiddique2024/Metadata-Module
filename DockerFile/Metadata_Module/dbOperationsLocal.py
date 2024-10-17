@@ -33,6 +33,98 @@ def getAllNodes():
 
 
 
+def nodesRelation():
+    with driver.session() as session:
+ 
+        nodeToLookFor = input(f"Enter the name of the node to search: ")
+        # Query to find the node
+        query = """MATCH (tNode:digitalTwin {name: $nodeToLookFor}) RETURN tNode"""
+        result = session.run(query, {"nodeToLookFor": nodeToLookFor})
+
+        found_any = False
+
+        for record in result:
+            tNode = record["tNode"]
+            print("Node found:", tNode)  # Debugging: Print the node details
+            found_any = True
+            
+            # Create query for all relationships from this node 
+      
+            queryFindRelationFrom = """
+            MATCH (tNode {name: $nodeName})-[r]->(connectedNode)
+            RETURN tNode, type(r) AS relationshipType, connectedNode
+            """
+
+            # Run the update query with the node ID and new name as parameters
+        resultNew = session.run(queryFindRelationFrom,  {"nodeName": nodeToLookFor})
+
+        # Print the relationships
+        for record in resultNew:
+            tNode = record["tNode"]
+            relationshipType = record["relationshipType"]
+            connectedNode = record["connectedNode"]
+            
+            print(f"Node: {tNode['name']} -> [{relationshipType}] -> {connectedNode['name']}")
+
+        if not found_any:
+            print("No Relationships were found")
+
+def nodeTraceback():
+    with driver.session() as session:
+        # Get the node name from user input
+        nodeToLookFor = input("Enter the name of the node to search: ")
+        
+        # Query to find the node
+        query = """MATCH (tNode:LO {name: $nodeToLookFor}) RETURN tNode"""
+        result = session.run(query, {"nodeToLookFor": nodeToLookFor})
+
+        found_any = False
+
+        for record in result:
+            tNode = record["tNode"]
+            print("Node found:", tNode)  # Debugging: Print the node details
+            found_any = True
+            
+            # Create query for all relationships from this node in a continuous path
+            queryFindRelationFrom = """
+            MATCH path = (LO:LO {name: $nodeToLookFor})-[*]->(endNode)
+            RETURN LO, nodes(path) AS nodeChain, relationships(path) AS relationChain, length(path) AS pathLength
+            ORDER BY length(path) DESC
+            LIMIT 1
+            """
+
+            # Run the query to find the longest path from the found node
+            resultNew = session.run(queryFindRelationFrom, {"nodeToLookFor": nodeToLookFor})
+
+            # Track nodes to avoid repeats and ensure a single continuous path
+            visited = set()
+
+            # Print the relationships in a tree-like structure
+            for record in resultNew:
+                learnerObject = record["LO"]  # Extract the learner object
+                nodeChain = record["nodeChain"]  # List of nodes along the path
+                relationChain = record["relationChain"]  # List of relationships along the path
+                
+                # Print starting node
+                tree_output = f"{learnerObject['name']}"
+                
+                # Loop through the path and print each node and its connecting relationship
+                for i in range(len(relationChain)):
+                    fromNode = nodeChain[i]
+                    toNode = nodeChain[i + 1]
+                    relationshipType = relationChain[i].type
+                    
+                    # Add to visited to prevent loops
+                    if toNode.element_id not in visited:
+                        tree_output += f" -> [{relationshipType}] -> {toNode['name']}"
+                        visited.add(toNode.element_id)
+
+                print(tree_output)
+        
+        if not found_any:
+            print("No node found with the specified name.")
+
+
 
 def updateNodes():
     with driver.session() as session:
@@ -71,20 +163,62 @@ def updateNodes():
             print("No nodes were found with the name ' GE414'.")
 
 
+#"node1+DT,relation,node2+LO"
+#Node properties 
+#digitalTwin
+    #tmname:primaryNodeType(DT):SecondaryType(Aircraft,ship,etc): Properties MissionProfile, name
+
+def add2nodesRelation(driver, node1array,relation,node2array):
+
+    if (len(node1array) >= 2):
+        primaryType = node1array[1]
+        secondaryType = node1array[2]
+        missionProfile = node1array[3]
+
+        primaryType2 = node2array[1]
+        secondaryType2 = node2array[2]
+        missionProfile2 = node2array[3]
+        
+        if (node2array[1] == "learnerObject"):
+            learnerObject = node2array[1]
+            mediaType = node2array[2]
+            location = node2array[3]
+            contentID = node2array[4]
+
+    
 
 
-def add2nodesRelation(driver, node1,relation,node2):
+
     with driver.session() as session:
-        query = f"""
-            MERGE (node1:digitalTwin:Aircraft {{name: $nameofNode1}})
-            MERGE (node2:digitalTwin:Engine {{name: $nameofNode2}})
+        query1 = f"""
+            MERGE (node1:`{primaryType}`:`{secondaryType}` {{name: $nameofNode1, missionProfile: $missionProfile}})
+            MERGE (node2:`{primaryType2}`:`{secondaryType2}` {{name: $nameofNode2, missionProfile: $missionProfile2}})
             MERGE (node1)<-[:`has_{relation}`]-(node2)
             MERGE (node2)<-[:`{relation}_of`]-(node1)
-        """ 
-        session.run(query, {
-            "nameofNode1": node1,
-            "nameofNode2": node2
-        })
+            """
+        if (node2array[1] == "learnerObject"):
+            query2 = f"""
+                MERGE (node1:`{primaryType}`:`{secondaryType}` {{name: $nameofNode1, missionProfile: $missionProfile}})
+                MERGE (node2:`{learnerObject}`:`{mediaType}` {{name: $nameofNode1, location: $location, contentID: $contentID}})
+                MERGE (node1)<-[:`has_{relation}`]-(node2)
+                MERGE (node2)<-[:`{relation}_of`]-(node1)
+                """
+        
+        if(node2array[1] == "learnerObjct"):
+            session.run(query2, {
+                "nameofNode1": node1array[0],
+                "nameofNode2": node2array[0],
+                "missionProfile": missionProfile,
+                "location": location,
+                "contentID": contentID
+            })
+        else:         
+            session.run(query1, {
+                "nameofNode1": node1array[0],
+                "nameofNode2": node2array[0],
+                "missionProfile": missionProfile,
+                "missionProfile2":missionProfile2
+            })  
         # session.run(
         #     f"""
         #     MERGE (node1:digitalTwin {{name: $nameofNode1}})
@@ -105,10 +239,10 @@ def add2nodesRelation(driver, node1,relation,node2):
 
 #Node properties 
 #digitalTwin
-    #tmname:primaryNodeType(DT):SecondaryType(Aircraft,ship,etc): Properties MissionProfilemnam
+    #tmname:primaryNodeType(DT):SecondaryType(Aircraft,ship,etc): Properties MissionProfile, name
 
 #learnerObject
-    #tname:primaryNodeType(LO):mediaType(pdf,img/jpeg,etc):fileLocation:contentID
+    #tname:primaryNodeType(LO):mediaType(pdf,img/jpeg,etc):Properties fileLocation:contentID
 
 # with GraphDatabase.driver(URI, auth=AUTH) as driver:
 #     nameOfNode = input('What is the node name? : ')
@@ -158,57 +292,24 @@ def store_relationship():
 
 
 with GraphDatabase.driver(URI, auth=AUTH) as driver:
-    updateNodes()
+
+    # updateNodes()
     # getAllNodes()
     # nodesArray = [nodes.split(",") for nodes in store_relationship()]
 
     # for eachItem in nodesArray:
     #     #assign variable here 
     #     node1, relation, node2 = eachItem
-    #     print(node1)
-    #     print(node2)
+    #     #node1 = F22+DT+Aircraft
+    #     node1array =  node1.split("+")
+    #     node2array = node2.split("+")
+    #     print(node1array)
+    #     print(node2array)
+    #     # print(node1)
+    #     # print(node2)
 
-    #     add2nodesRelation(driver,node1,relation,node2)
-
-
-
-
-
-
-# (f18lo:learnerObject:Aircrafts {name: 'F/A - 18 SuperHornet_LO'}), 
-#             (f414:digitalTwin:jetEngine {name: 'General Electric F414', missionProfile: 'Jet engine'})
-
-
-#    def checkIfNodeExists(node1,relation,node2):
-#       if node1 & node2 & relation exists:
-#             doNothing and return message "Nodes and Relations exists"
-#       elif node1 & node2 does not exist:
-#             createNodes_Relations(node1,relation,node2)
-#       elif node1 & node2 exists BUT relation doesNot exist
-#             addRelation(node1,relation,node2)
-#       elif node1 exists:
-#             addRelationAndOneNode(newNode,relation,existingNode)
-#       else node2 exists
-#             addRelationAndOneNode(newNode,relation,existingNode)
+    #     add2nodesRelation(driver,node1array,relation,node2array)
+    # nodesRelation()
+    nodeTraceback()
 
 
-    #This function adds one New node and creates realtion with one other existing nodes
-    # def addRelationAndOneNode(node,realtion):
-    #     query statement for adding relation to one existing node and creating relationship
-    #
-    # This function adds new relation to two existing nodes             
-    # def addRelation(node1, realtion, node2):
-    #     query statement for adding relation to two existing node
-    #  
-    # This function creates two nodes and adds relations            
-    # def createNodes_Relations(node1, relationParam, node2):
-    #       querystatement for create
-    #             """
-    #             create(n1;Node1name,nodeType .... then node 2 n2:node2Name,nodeType)
-    #             """
-    #             
-    #             create relation
-    #             """
-    #             n1 has relation:relationParam with n2
-    #             
-    #             """
