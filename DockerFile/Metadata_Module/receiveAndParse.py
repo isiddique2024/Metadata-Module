@@ -66,6 +66,38 @@ def process_document(channel, method, properties, body):
         channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
 
 
+def process_audio(channel, method, properties, body):
+    try:
+        obj = bson.loads(body)
+        content_id = obj["ContentId"]
+        file_name = obj["FileName"]
+        audio_type = obj["AudioType"]
+
+        if content_id != current_content_id:
+            logging.info(f"Skipping audio with non-matching content ID: {content_id}")
+            channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+            return False
+
+        audio_file_name = f"audio_{file_name}+{content_id}.{audio_type}"
+        save_file(os.path.join(current_folder, audio_file_name), obj["Payload"])
+
+        logging.info(f"Processed audio with content ID: {content_id}")
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+        return True
+
+    except KeyError as e:
+        logging.error(f"Missing key in audio message: {str(e)}")
+        channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+    except bson.errors.BSONError:
+        logging.error("Failed to decode BSON message for audio")
+        channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+    except Exception as e:
+        logging.error(f"Error processing audio message: {str(e)}")
+        channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+
+    return False
+
+
 def process_image(channel, method, properties, body):
     try:
         obj = bson.loads(body)
@@ -111,6 +143,44 @@ def process_related_images(channel):
             break
 
 
+def process_store(channel, method, properties, body):
+    try:
+        obj = bson.loads(body)
+        content_id = obj["ContentId"]  # Get ContentId from the BSON object
+        file_name = obj["FileName"]
+
+        logging.info(
+            f"Received store message with ContentId: {content_id}, FileName: {file_name}"
+        )
+
+        base_path = create_dir(f"store_{content_id}")
+
+        # Save the main payload
+        save_file(os.path.join(base_path, f"payload_{file_name}"), obj["Payload"])
+
+        # Save Meta, Summary, and Keywords
+        for key in ["Meta", "Summary", "Keywords"]:
+            if key in obj:
+                save_file(
+                    os.path.join(base_path, f"{key.lower()}_{file_name}"), obj[key]
+                )
+            else:
+                logging.warning(f"Expected key '{key}' not found in store message")
+
+        logging.info(f"Processed store message with ContentId: {content_id}")
+        channel.basic_ack(delivery_tag=method.delivery_tag)
+
+    except KeyError as e:
+        logging.error(f"Missing key in store message: {str(e)}")
+        channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+    except bson.errors.BSONError:
+        logging.error("Failed to decode BSON message for store")
+        channel.basic_nack(delivery_tag=method.delivery_tag, requeue=False)
+    except Exception as e:
+        logging.error(f"Error processing store message: {str(e)}")
+        channel.basic_nack(delivery_tag=method.delivery_tag, requeue=True)
+
+
 def start_receiver():
     connection_params = pika.ConnectionParameters(
         "localhost", heartbeat=600, blocked_connection_timeout=300
@@ -125,9 +195,13 @@ def start_receiver():
 
     document_queue_name = "Document"
     image_queue_name = "Image"
+    store_queue_name = "Store"  # New queue for Store messages
 
     channel.queue_declare(queue=document_queue_name, durable=True, arguments=None)
     channel.queue_declare(queue=image_queue_name, durable=True, arguments=None)
+    channel.queue_declare(
+        queue=store_queue_name, durable=True, arguments=None
+    )  # Declare Store queue
 
     channel.queue_bind(
         exchange=exchange_name, queue=document_queue_name, routing_key="*.Document.*"
@@ -135,13 +209,19 @@ def start_receiver():
     channel.queue_bind(
         exchange=exchange_name, queue=image_queue_name, routing_key="*.Image.*"
     )
+    channel.queue_bind(
+        exchange=exchange_name, queue=store_queue_name, routing_key="*.Store.*"
+    )  # Bind Store queue
 
     channel.basic_qos(prefetch_count=1)
     channel.basic_consume(
         queue=document_queue_name, on_message_callback=process_document
     )
+    channel.basic_consume(
+        queue=store_queue_name, on_message_callback=process_store
+    )  # Consume from Store queue
 
-    logging.info("Waiting for documents...")
+    logging.info("Waiting for messages...")
 
     try:
         channel.start_consuming()
@@ -154,3 +234,47 @@ def start_receiver():
 
 if __name__ == "__main__":
     start_receiver()
+
+# def start_receiver():
+#     connection_params = pika.ConnectionParameters(
+#         "localhost", heartbeat=600, blocked_connection_timeout=300
+#     )
+#     connection = pika.BlockingConnection(connection_params)
+#     channel = connection.channel()
+
+#     exchange_name = "Topic"
+#     channel.exchange_declare(
+#         exchange=exchange_name, exchange_type="topic", durable=True
+#     )
+
+#     document_queue_name = "Document"
+#     image_queue_name = "Image"
+
+#     channel.queue_declare(queue=document_queue_name, durable=True, arguments=None)
+#     channel.queue_declare(queue=image_queue_name, durable=True, arguments=None)
+
+#     channel.queue_bind(
+#         exchange=exchange_name, queue=document_queue_name, routing_key="*.Document.*"
+#     )
+#     channel.queue_bind(
+#         exchange=exchange_name, queue=image_queue_name, routing_key="*.Image.*"
+#     )
+
+#     channel.basic_qos(prefetch_count=1)
+#     channel.basic_consume(
+#         queue=document_queue_name, on_message_callback=process_document
+#     )
+
+#     logging.info("Waiting for documents...")
+
+#     try:
+#         channel.start_consuming()
+#     except KeyboardInterrupt:
+#         logging.info("Interrupted by user, shutting down...")
+#         channel.stop_consuming()
+#     finally:
+#         connection.close()
+
+
+# if __name__ == "__main__":
+#     start_receiver()
