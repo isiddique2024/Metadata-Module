@@ -40,7 +40,7 @@ def id_generator(job):
             image["ContentId"] = job["ID"]
     if "NumberOfAudio" in job and job["NumberOfAudio"] > 0:
         for audio in job["Audio"]:
-            audio["ID"] = job["ID"]
+            audio["ContentId"] = job["ID"]
             audio["AudioID"] = compute_unique_id(audio)
     if "NumberOfVideo" in job and job["NumberOfVideo"] > 0:
         for video in job["Video"]:
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         "Audio": [
             {
                 "ID": "ObjectID",
-                "AudioID": "ObjectID",
+                "ContentId": "ObjectID",
                 "AudioType": "String",
                 "FileName": "String",
                 "Payload": "Binary",
