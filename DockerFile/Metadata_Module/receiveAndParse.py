@@ -146,7 +146,7 @@ def process_related_images(channel):
 def process_store(channel, method, properties, body):
     try:
         obj = bson.loads(body)
-        content_id = obj["ContentId"]  # Get ContentId from the BSON object
+        content_id = obj["ContentId"]
         file_name = obj["FileName"]
 
         logging.info(
@@ -155,15 +155,15 @@ def process_store(channel, method, properties, body):
 
         base_path = create_dir(f"store_{content_id}")
 
-        # Save the main payload
-        save_file(os.path.join(base_path, f"payload_{file_name}"), obj["Payload"])
+        # Save the main payload with content_id prefix
+        payload_filename = f"{content_id}+payload_{file_name}"
+        save_file(os.path.join(base_path, payload_filename), obj["Payload"])
 
-        # Save Meta, Summary, and Keywords
+        # Save Meta, Summary, and Keywords with content_id prefix
         for key in ["Meta", "Summary", "Keywords"]:
             if key in obj:
-                save_file(
-                    os.path.join(base_path, f"{key.lower()}_{file_name}"), obj[key]
-                )
+                file_filename = f"{content_id}+{key.lower()}_{file_name}"
+                save_file(os.path.join(base_path, file_filename), obj[key])
             else:
                 logging.warning(f"Expected key '{key}' not found in store message")
 
