@@ -34,3 +34,8 @@ pip-delete-this-directory.txt
 
 # Ignore macOS system files
 .DS_Store
+
+DockerFile/Metadata_Module/custom_ner_model/
+DockerFile/Metadata_Module/custom_ner_modelREL/
+DockerFile/ConsumerDemo/
+DockerFile/Main_Server/

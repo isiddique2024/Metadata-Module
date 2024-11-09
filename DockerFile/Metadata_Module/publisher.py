@@ -102,7 +102,7 @@ def receive_bson_obj():
     # Create a TCP/IP socket
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         # Bind the socket to localhost on port 12345
-        s.bind(('localhost', 12345))
+        s.bind(('localhost', 12346))
         # Listen for incoming connections
         s.listen()
 

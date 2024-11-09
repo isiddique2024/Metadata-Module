@@ -33,7 +33,7 @@ class statusFeed:
 #This sends to our rabbitMQ publisher .. Like their parse.py Choose a port and have our publisher listen on that port
 def messageSender(bsonObj):
     #sending to port
-    port = '12345'
+    port = '12346'
     publish_to_rabbitmq(port, bsonObj)
     
 # main function

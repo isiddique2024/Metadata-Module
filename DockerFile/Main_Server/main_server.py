@@ -106,25 +106,25 @@ if __name__ == "__main__":
         job["Documents"][0]["DocumentType"] = "pdf"
         job["Documents"][0]["FileName"] = f.name
         f.close()
-    with open("my_video.mp4", "rb") as f:
-        job["Video"][0]["Payload"] = f.read()
-        job["Video"][0]["VideoType"] = "mp4"
-        job["Video"][0]["FileName"] = f.name
-        f.close()
-    with open("x.png", "rb") as f:
-        job["Images"][0]["Payload"] = f.read()
-        job["Images"][0]["PictureType"] = "png"
-        job["Images"][0]["FileName"] = f.name
-        f.close()
-    with open("audio.mp3", "rb") as f:
-        job["Audio"][0]["Payload"] = f.read()
-        job["Audio"][0]["AudioType"] = "mp3"
-        job["Audio"][0]["FileName"] = f.name
-        f.close()
-    with open("audio2.mp3", "rb") as f:
-        job["Audio"][1]["Payload"] = f.read()
-        job["Audio"][1]["AudioType"] = "mp3"
-        job["Audio"][1]["FileName"] = f.name
-        f.close()
+    # with open("my_video.mp4", "rb") as f:
+    #     job["Video"][0]["Payload"] = f.read()
+    #     job["Video"][0]["VideoType"] = "mp4"
+    #     job["Video"][0]["FileName"] = f.name
+    #     f.close()
+    # with open("x.png", "rb") as f:
+    #     job["Images"][0]["Payload"] = f.read()
+    #     job["Images"][0]["PictureType"] = "png"
+    #     job["Images"][0]["FileName"] = f.name
+    #     f.close()
+    # with open("audio.mp3", "rb") as f:
+    #     job["Audio"][0]["Payload"] = f.read()
+    #     job["Audio"][0]["AudioType"] = "mp3"
+    #     job["Audio"][0]["FileName"] = f.name
+    #     f.close()
+    # with open("audio2.mp3", "rb") as f:
+    #     job["Audio"][1]["Payload"] = f.read()
+    #     job["Audio"][1]["AudioType"] = "mp3"
+    #     job["Audio"][1]["FileName"] = f.name
+    #     f.close()
     id_generator(job)
     send_bson_obj(job)
