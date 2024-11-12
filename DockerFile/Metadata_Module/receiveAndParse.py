@@ -155,14 +155,14 @@ def process_store(channel, method, properties, body):
 
         base_path = create_dir(f"store_{content_id}")
 
-        # Save the main payload with content_id prefix
-        payload_filename = f"{content_id}+payload_{file_name}"
+        # Save the main payload including original filename
+        payload_filename = f"{content_id}+{file_name}+payload.txt"
         save_file(os.path.join(base_path, payload_filename), obj["Payload"])
 
-        # Save Meta, Summary, and Keywords with content_id prefix
+        # Save Meta, Summary, and Keywords including original filename
         for key in ["Meta", "Summary", "Keywords"]:
             if key in obj:
-                file_filename = f"{content_id}+{key.lower()}_{file_name}"
+                file_filename = f"{content_id}+{file_name}+{key.lower()}.txt"
                 save_file(os.path.join(base_path, file_filename), obj[key])
             else:
                 logging.warning(f"Expected key '{key}' not found in store message")
@@ -193,35 +193,36 @@ def start_receiver():
         exchange=exchange_name, exchange_type="topic", durable=True
     )
 
+    # Define queue names
+    store_queue_name = "Store"  # Moved to top to emphasize priority
     document_queue_name = "Document"
     image_queue_name = "Image"
-    store_queue_name = "Store"  # New queue for Store messages
 
+    # Declare queues
+    channel.queue_declare(queue=store_queue_name, durable=True, arguments=None)
     channel.queue_declare(queue=document_queue_name, durable=True, arguments=None)
     channel.queue_declare(queue=image_queue_name, durable=True, arguments=None)
-    channel.queue_declare(
-        queue=store_queue_name, durable=True, arguments=None
-    )  # Declare Store queue
 
+    # Bind queues to exchange
+    channel.queue_bind(
+        exchange=exchange_name, queue=store_queue_name, routing_key="*.Store.*"
+    )
     channel.queue_bind(
         exchange=exchange_name, queue=document_queue_name, routing_key="*.Document.*"
     )
     channel.queue_bind(
         exchange=exchange_name, queue=image_queue_name, routing_key="*.Image.*"
     )
-    channel.queue_bind(
-        exchange=exchange_name, queue=store_queue_name, routing_key="*.Store.*"
-    )  # Bind Store queue
 
     channel.basic_qos(prefetch_count=1)
+
+    # Set up consumers - Store queue first
+    channel.basic_consume(queue=store_queue_name, on_message_callback=process_store)
     channel.basic_consume(
         queue=document_queue_name, on_message_callback=process_document
     )
-    channel.basic_consume(
-        queue=store_queue_name, on_message_callback=process_store
-    )  # Consume from Store queue
 
-    logging.info("Waiting for messages...")
+    logging.info("Waiting for messages... (Store queue prioritized)")
 
     try:
         channel.start_consuming()
